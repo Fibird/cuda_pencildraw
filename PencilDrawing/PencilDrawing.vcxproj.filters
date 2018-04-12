@@ -27,7 +27,7 @@
     <ClInclude Include="GenStroke.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="GenToneMap.h">
+    <ClInclude Include="ToneDrawing.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -39,6 +39,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="GenStroke.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ToneDrawing.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
