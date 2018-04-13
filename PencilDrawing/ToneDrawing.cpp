@@ -44,31 +44,40 @@ void hist_match(const cv::Mat &src, cv::Mat &dst, const double hgram[])
 		tgt_cumulative[i] = temp2;
 	}
 
-	// using single map law(SML)
+	// using group map law(GML)
 	int min_ids[256];
+	int start = 0, end = 0, last_start = 0, last_end = 0;
 	for (int i = 0; i < 256; ++i)
 	{
-		//        double min_value = abs(tgt_cumulative[i] - src_cumulative[0]);  // group map law(GML)
-		double min_value = abs(src_cumulative[i] - tgt_cumulative[0]);
-		int min_index = 0;
+		double min_value = abs(tgt_cumulative[i] - src_cumulative[0]);
 		for (int j = 1; j < 256; ++j)
 		{
-			//            double temp = abs(tgt_cumulative[i] - src_cumulative[j]);  // group map law(GML)
-			double temp = abs(src_cumulative[i] - tgt_cumulative[j]);
-			if (temp < min_value)
+			double temp = abs(tgt_cumulative[i] - src_cumulative[j]);
+			if (temp <= min_value)
 			{
 				min_value = temp;
-				min_index = j;
+				end = j;
 			}
 		}
-		min_ids[i] = min_index;
+		if (start != last_start || end != last_end)
+		{
+			for (int t = start; t <= end; ++t)
+			{
+				// get relationship of mapping
+				min_ids[t] = i;
+			}
+			last_start = start;
+			last_end = end;
+			start = last_end + 1;
+		}
 	}
 
-	// map dst image
 	if (!dst.data)
 	{
 		dst.create(src.size(), src.type());
 	}
+
+	// map dst image according relationship
 	uchar *dst_data = dst.data;
 	for (unsigned int i = 0; i < rows * cols; ++i)
 	{

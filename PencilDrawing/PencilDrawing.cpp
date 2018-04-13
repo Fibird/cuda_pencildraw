@@ -7,13 +7,14 @@
 #include <opencv2/imgproc/imgproc.hpp>
 #include <iostream>
 #include "GenStroke.h"
+#include "ToneDrawing.h"
 
 using namespace std;
 using namespace cv;
 
 int main(int argc, char** argv)
 {
-	Mat image, rst;
+	Mat image, S_rst, J_rst;
 	int data_type = CV_32FC1;
 
 	if (argc != 2)
@@ -24,9 +25,10 @@ int main(int argc, char** argv)
 
 	image = imread(argv[1], CV_LOAD_IMAGE_GRAYSCALE);
 	// Stroke Generation 
-	genStroke(image, rst, 10, 1, 0.1f);
-	
-	imshow("display", rst);
+	genStroke(image, S_rst, 10, 1, 0.1f);
+	genToneMap(image, J_rst);
+	imshow("S", S_rst);
+	imshow("J", J_rst);
 	waitKey(0);
 
     return 0;
