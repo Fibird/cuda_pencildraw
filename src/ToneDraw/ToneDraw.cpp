@@ -1,4 +1,4 @@
-#include "ToneDrawing.h"
+#include "ToneDraw.h"
 #include <cmath>
 #include <iostream>
 
@@ -101,7 +101,7 @@ void genToneMap(const cv::Mat & input, cv::Mat & J_rst)
 			// Model of mild tone layer
 			OMEGA2 * ((i >= u_a) && (i <= u_b) ? 1 / (u_b - u_a) : 0) + 
 			// Model of dark layer
-			OMEGA3 * 1 / std::sqrtf(2 * PI * delta_d) * std::exp(-(i - mu_d) * 
+			OMEGA3 * 1 / sqrtf(2 * PI * delta_d) * std::exp(-(i - mu_d) * 
 			(i - mu_d) / (2 * delta_d * delta_d))) * 0.01;
 		total += target_histgram[i];
 	}

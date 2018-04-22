@@ -1,6 +1,6 @@
 find_package(OpenCV REQUIRED)
 
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/bin/lib)
+set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin/lib)
 
 include_directories(${OpenCV_INCLUDE_DIRS})
 
