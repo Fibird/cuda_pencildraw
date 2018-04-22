@@ -1,13 +1,9 @@
-// PencilDrawing.cpp : Defines the entry point for the console application.
-//
-
-#include "stdafx.h"
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <iostream>
 #include "GenStroke.h"
-#include "ToneDrawing.h"
+#include "ToneDraw.h"
 
 using namespace std;
 using namespace cv;

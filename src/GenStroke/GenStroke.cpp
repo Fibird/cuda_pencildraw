@@ -1,4 +1,3 @@
-#include "stdafx.h"
 #include "GenStroke.h"
 
 void genStroke(const cv::Mat & src, cv::Mat & dst, int ks, int width, float gamma_s)

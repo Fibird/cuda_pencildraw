@@ -1,4 +1,3 @@
-#include "stdafx.h"
 #include "ToneDrawing.h"
 #include <cmath>
 #include <iostream>
