@@ -1,8 +1,12 @@
+cmake_minimum_required(VERSION 3.5)
+
 find_package(OpenCV REQUIRED)
 
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/bin)
+set(MAIN_PROJECT_ROOT_DIR ${PROJECT_SOURCE_DIR}/../..)
+message(${MAIN_PROJECT_ROOT_DIR})
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${MAIN_PROJECT_ROOT_DIR}/bin)
 
-set(PENCIL_DRAW_INCLUDE_DIRS ${PROJECT_SOURCE_DIR}/src ${PROJECT_SOURCE_DIR}/src/GenStroke ${PROJECT_SOURCE_DIR}/src/ToneDraw ${PROJECT_SOURCE_DIR}/src/GenPencil)
+set(PENCIL_DRAW_INCLUDE_DIRS ${MAIN_PROJECT_ROOT_DIR}/src ${MAIN_PROJECT_ROOT_DIR}/src/GenStroke ${MAIN_PROJECT_ROOT_DIR}/src/ToneDraw ${MAIN_PROJECT_ROOT_DIR}/src/GenPencil)
 
 include_directories(
 ${OpenCV_INCLUDE_DIRS}
@@ -11,11 +15,7 @@ ${PENCIL_DRAW_INCLUDE_DIRS}
 
 add_executable(pencil_draw PencilDraw.cpp)
 
-set(PENCIL_DRAW_LIBRARY_DIRS ${PROJECT_SOURCE_DIR}/bin/lib)
-link_directories(
-${OpenCV_LIBRARY_DIRS}
-${PENCIL_DRAW_LIBRARY_DIRS}
-)
+set(PENCIL_DRAW_LIBRARY_DIRS ${MAIN_PROJECT_ROOT_DIR}/bin/lib)
 
-set(PENCIL_DRAW_LIBS ${PROJECT_SOURCE_DIR}/bin/lib/libGenStroke.so ${PROJECT_SOURCE_DIR}/bin/lib/libToneDraw.so ${PROJECT_SOURCE_DIR}/bin/lib/libGenPencil.so)
+set(PENCIL_DRAW_LIBS ${PENCIL_DRAW_LIBRARY_DIRS}/libGenStroke.so ${PENCIL_DRAW_LIBRARY_DIRS}/libToneDraw.so ${PENCIL_DRAW_LIBRARY_DIRS}/libGenPencil.so)
 target_link_libraries(pencil_draw ${OpenCV_LIBS} ${PENCIL_DRAW_LIBS})

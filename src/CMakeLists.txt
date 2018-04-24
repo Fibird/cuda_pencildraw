@@ -1,4 +1,4 @@
 add_subdirectory(GenStroke)
 add_subdirectory(ToneDraw)
 add_subdirectory(GenPencil)
-add_subdirectory(PencilDraw EXECLUDE_FROM_ALL)
+add_subdirectory(PencilDraw EXCLUDE_FROM_ALL)

@@ -1,4 +1,5 @@
 #include "GenPencil.h"
+#include "sparse_matrix.h"
 
 void GenPencil(const cv::Mat & input, const cv::Mat & pencil_texture, const cv::Mat & tone_map, cv::Mat & T_rst)
 {
