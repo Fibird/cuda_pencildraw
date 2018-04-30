@@ -1,49 +1,57 @@
-#include <opencv2/core/core.hpp>
-#include <opencv2/highgui/highgui.hpp>
-#include <opencv2/imgproc/imgproc.hpp>
 #include <iostream>
+#include <ctime>
 #include "GenStroke.h"
 #include "ToneDraw.h"
 #include "GenPencil.h"
-#include "matrix.h"
 
 using namespace std;
 using namespace cv;
 
 int main(int argc, char** argv)
 {
-	Mat image, S_rst, J_rst;
-    Mat pencil, T_rst;
-	int data_type = CV_32FC1;
-
 	if (argc != 3)
 	{
 		cout << "Usage: " << argv[0] << "input" << "pencil" << endl;
 		return -1;
 	}
 
-	image = imread(argv[1], CV_LOAD_IMAGE_GRAYSCALE);
-    pencil = imread(argv[2], CV_LOAD_IMAGE_GRAYSCALE);
+	Mat image = imread(argv[1], CV_LOAD_IMAGE_GRAYSCALE);
+    Mat pencil = imread(argv[2], CV_LOAD_IMAGE_GRAYSCALE);
+    Mat S_rst, J_rst, gray_result, color_result;
+    
+    clock_t start, stop;
+    double gs_time, gt_time, gp_time;
+    double all_time;
 
+    start = clock();
 	// Stroke Generation 
 	genStroke(image, S_rst, 10, 1, 0.1f);
+    stop = clock();
+    gs_time = (double) (stop - start) / CLOCKS_PER_SEC;
+
+    start = clock();
     // Tone Map Generation
 	genToneMap(image, J_rst);
+    stop = clock();
+    gt_time = (double) (stop - start) / CLOCKS_PER_SEC;
+
+    start = clock();
     // Pencil Texture Generation
-    GenPencil(pencil, J_rst, T_rst, image.size().width, image.size().height);
+    GenPencil(pencil, J_rst, S_rst, gray_result);
+    stop = clock();
+    gp_time = (double) (stop - start) / CLOCKS_PER_SEC;
 
     // Combine results
-    S_rst.convertTo(S_rst, CV_64FC1);
-    Matrix m_rst;
-    Matrix m_S, m_T;
-    m_S.rows = S_rst.size().height;    m_S.cols = S_rst.size().width;
-    m_S.data = (double*)S_rst.data;
-    m_T.rows = T_rst.size().height;    m_T.cols = T_rst.size().width;
-    m_T.data = (double*)T_rst.data;
-    dot_mul(m_S, m_T, m_rst);
-    Mat rst(m_rst.rows, m_rst.cols, CV_64FC1, m_rst.data);
-    rst.convertTo(rst, CV_8UC1, 255);
-    imwrite("rst.png", rst);
+    gray_result.convertTo(gray_result, CV_8UC1, 255);
+    cvtColor(gray_result, color_result, COLOR_GRAY2RGBA);
+    imwrite("result/gray_rst.png", gray_result);
+    imwrite("result/color_rst.png", color_result);
+    
+    cout << "Elapsed Time of Generating Stroke: " << gs_time << " sec" << endl;
+    cout << "Elapsed Time of Generating Tone Map: " << gt_time << " sec" << endl;
+    cout << "Elapsed Time of Generating Pencil: " << gp_time << " sec" << endl;
+
+    cout << "Elapsed Time of All: " << gs_time + gt_time + gp_time << " sec" << endl;
 
     return 0;
 }
