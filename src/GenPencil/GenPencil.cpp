@@ -1,5 +1,8 @@
 #include "GenPencil.h"
 #include "sparse_matrix.h"
+#include <opencv2/highgui/highgui.hpp>
+
+using namespace cv;
 
 void GetDx(unsigned id, unsigned h, unsigned w, SparseMatrix &Dx)
 {
@@ -36,7 +39,8 @@ void GetDiag(double *d, unsigned length, SparseMatrix &diag)
     diag.table = NULL;
     diag.terms = length;
     diag.rows = length; diag.cols = length;
-
+    
+    diag.table = new trituple[diag.terms];
     for (unsigned i = 0; i < length; ++i)
     {
         diag.table[i].row = i;
@@ -45,50 +49,51 @@ void GetDiag(double *d, unsigned length, SparseMatrix &diag)
     }
 }
 
-void GenPencil(const cv::Mat & input, const cv::Mat & pencil_texture, const cv::Mat & tone_map, cv::Mat & T_rst)
+void GenPencil(const cv::Mat & pencil_texture, const cv::Mat & tone_map, cv::Mat & T_rst, unsigned width, unsigned height)
 {
     //// OpenCV Operations ////
     // Get P
-	int w = input.size().width, h = input.size().height;
 	cv::Mat P;
-    pencil_texture.convertTo(P, CV_64FC1);
-	cv::resize(P, P, input.size());
+    pencil_texture.convertTo(P, CV_64FC1, 1/ 255.0);
+	cv::resize(P, P, cv::Size(width, height)); 
     // Get J
     cv::Mat J;
-    tone_map.convertTo(J, CV_64FC1);
-    cv::resize(J, J, input.size());
+    tone_map.convertTo(J, CV_64FC1, 1/255.0);
+    //cv::resize(J, J, cv::Size(height, width));
 
     //// Matrix Operations ////
-	//P.reshape(0, w * h);
+	//P.reshape(0, width * height);
     Matrix m_P;
-    m_P.rows = w * h;   m_P.cols = 1;
+    //m_P.rows = width * height;   m_P.cols = 1;
+    m_P.rows = height;   m_P.cols = width;
     m_P.data = (double*)P.data;
 
-	//cv::log(P, logP);
+/*	//cv::log(P, logP);
     Matrix m_logP;
     log(m_P, m_logP);
     
     SparseMatrix sm_logP;
-    GetDiag(m_logP.data, m_logP.rows, sm_logP);
+    GetDiag(m_logP.data, m_logP.rows, sm_logP);*/
 
     Matrix m_J;
-    m_J.rows = w * h;   m_J.cols = 1;
+    //m_J.rows = width * height;   m_J.cols = 1;
+    m_J.rows = height;   m_J.cols = width;
     m_J.data = (double*)J.data;
 
-    Matrix m_logJ;
+    /*Matrix m_logJ;
     log(m_J, m_logJ);
 
     SparseMatrix sm_Dx, sm_Dy;
-    GetDx(h, w * h, w * h, sm_Dx);
-    GetDx(1, w * h, w * h, sm_Dy);
+    GetDx(height, width * height, width * height, sm_Dx);
+    GetDx(1, width * height, width * height, sm_Dy);
     
     SparseMatrix sm_Dx_t, sm_Dy_t, Dx_mul_Dx_t, Dy_mul_Dy_t;
     SparseMatrix sm_logP_t, logP_t_mul_logP; 
     
     // get matrices transpose
-    transpose(sm_Dx, sm_Dx_t);
-    transpose(sm_Dy, sm_Dy_t);
-    transpose(sm_logP, sm_logP_t);
+    fastTranspose(sm_Dx, sm_Dx_t);
+    fastTranspose(sm_Dy, sm_Dy_t);
+    fastTranspose(sm_logP, sm_logP_t);
     
     // theta * (Dx * Dx' + Dy * Dy') + (logP)' * logP
     mul(sm_Dx_t, sm_Dx, Dx_mul_Dx_t);
@@ -107,13 +112,18 @@ void GenPencil(const cv::Mat & input, const cv::Mat & pencil_texture, const cv::
     mul(sm_logP_t, m_logJ, b);
     
     Matrix beta;
-    // TODO:pcg(A, b, 1e-6, 60);
     pcg(A, b.data, 1e-6, 60, beta.data);
 
-    beta.rows = h;  beta.cols = w;
-    m_P.rows = h;   m_P.cols = w;
+    beta.rows = height;  beta.cols = width;
+    m_P.rows = height;   m_P.cols = width;
 
     Matrix m_T;
-    // TODO: power(m_P, beta, m_T);
-    pow(m_P, beta, m_T);
+    pow(m_P, beta, m_T);*/
+    Matrix m_T;
+    Matrix one;
+    one.rows = m_J.rows;    one.cols = m_J.cols;
+    ones(one);
+    sub(one, m_J, m_J);
+    pow(m_P, m_J, m_T);    
+    T_rst = cv::Mat(m_T.rows, m_T.cols, CV_64FC1, (double*)m_T.data);
 }
