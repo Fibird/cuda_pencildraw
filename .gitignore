@@ -330,5 +330,6 @@ Session.vim
 # auto-generated tag files
 tags
 
-
+### Result ###
+result
 # End of https://www.gitignore.io/api/vim

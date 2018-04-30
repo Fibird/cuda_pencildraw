@@ -2,7 +2,7 @@
 #include "sparse_matrix.h"
 #include <iostream>
 
-void GenPencil(const cv::Mat &pencil_texture, const cv::Mat &tone_map, const cv::Mat &stroke, cv::Mat &rst)
+void genPencil(const cv::Mat &pencil_texture, const cv::Mat &tone_map, const cv::Mat &stroke, cv::Mat &rst)
 {
     if (tone_map.size() != stroke.size())
     {

@@ -37,7 +37,7 @@ int main(int argc, char** argv)
 
     start = clock();
     // Pencil Texture Generation
-    GenPencil(pencil, J_rst, S_rst, gray_result);
+    genPencil(pencil, J_rst, S_rst, gray_result);
     stop = clock();
     gp_time = (double) (stop - start) / CLOCKS_PER_SEC;
 
