@@ -9,3 +9,4 @@ add_library(GenStroke SHARED GenStroke.cpp)
 link_directories(${OpenCV_LIBRARY_DIRS})
 
 target_link_libraries(GenStroke ${OpenCV_LIBS})
+add_subdirectory(cuda)

@@ -14,7 +14,7 @@ void genStroke(const cv::Mat & src, cv::Mat & dst, int ks, int width, float gamm
 	cv::Mat grad_x = cv::Mat::zeros(img_size, CV_32FC1);
 	cv::Mat grad_y = cv::Mat::zeros(img_size, CV_32FC1);
 	// Gradient X
-	grad_x(cv::Rect(1, 0, img_size.width - 1, img_size.height)) =
+	grad_x(cv::Rect(0, 0, img_size.width - 1, img_size.height)) =
 		abs(img(cv::Rect(0, 0, img_size.width - 1, img_size.height)) -
 			img(cv::Rect(1, 0, img_size.width - 1, img_size.height)));
 	// Gradient Y
