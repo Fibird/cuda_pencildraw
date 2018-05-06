@@ -16,3 +16,5 @@ link_directories(${OpenCV_LIBRARY_DIRS})
 
 set(CPU_MATLAB_LIBS ${CPU_MATLAB_PATH}/bin/lib/libcpu_matlab.so)
 target_link_libraries(GenPencil ${OpenCV_LIBS} ${CPU_MATLAB_LIBS})
+
+add_subdirectory(cuda ${PROJECT_SOURCE_DIR}/bin/lib)

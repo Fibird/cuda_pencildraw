@@ -16,3 +16,4 @@ link_directories(${OpenCV_LIBRARY_DIRS})
 
 set(CPU_HISTOGRAM_LIBS ${CPU_HISTOGRAM_PATH}/bin/lib/libcpu_histogram.so)
 target_link_libraries(ToneDraw ${OpenCV_LIBS} ${CPU_HISTOGRAM_LIBS})
+add_subdirectory(cuda)

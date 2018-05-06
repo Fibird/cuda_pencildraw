@@ -1,8 +1,6 @@
-#ifndef CU_GENSTROKE_H
-#define CU_GENSTROKE_H
+#ifndef CU_GEN_TONE_MAP_H
+#define CU_GEN_TONE_MAP_H
 
-#define MAX_SPACE 1024
-#include <cuda_runtime.h>
 #include <opencv2/core/core.hpp>
 
 #define CHECK(call)                                                            \
@@ -17,13 +15,8 @@
     }                                                                          \
 }
 
-// Signal/image element type
-// Must be float or double
 typedef float element;
 
-// constant memory used to save covolution kernel
-__constant__ element Mask[MAX_SPACE];
-
-void cuGenStroke(const cv::Mat & src, cv::Mat & dst, int ks, float gamma_s);
+void cuGenToneMap(cv::Mat &src, cv::Mat &dst);
 
 #endif
