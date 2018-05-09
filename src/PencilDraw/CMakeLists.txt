@@ -26,5 +26,5 @@ set(PENCIL_DRAW_LIBS ${PENCIL_DRAW_LIBRARY_DIRS}/libGenStroke.so ${PENCIL_DRAW_L
 set(CU_PENCIL_DRAW_LIBS ${PENCIL_DRAW_LIBRARY_DIRS}/libcuGenStroke.a ${PENCIL_DRAW_LIBRARY_DIRS}/libcuToneDraw.a ${PENCIL_DRAW_LIBRARY_DIRS}/libcuGenPencil.a)
 set(GPU_HISTOGRAM_PATH /home/liuchaoyang/grad_proj/cuda_pracs/histogram_proj)
 set(GPU_HISTOGRAM_LIBS ${GPU_HISTOGRAM_PATH}/bin/lib/gpu_histogram/libgpu_histogram.a)
-target_link_libraries(cpu_pencil_draw ${OpenCV_LIBS} ${PENCIL_DRAW_LIBS})
+target_link_libraries(cpu_pencil_draw ${OpenCV_LIBS} ${PENCIL_DRAW_LIBS} ${CPU_HISTOGRAM_LIBS})
 target_link_libraries(gpu_pencil_draw ${CU_PENCIL_DRAW_LIBS} ${OpenCV_LIBS} ${GPU_HISTOGRAM_LIBS})

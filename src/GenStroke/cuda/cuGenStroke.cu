@@ -236,7 +236,8 @@ void cuGenStroke(const cv::Mat &src, cv::Mat &dst, int kr, float gamma_s)
     int medKs = 3;
     int radius = medKs / 2;
 	/////   Allocate page-locked memory for image extension 
-	CHECK(cudaMallocHost((void**)&hostExt, (width + 2 * radius) * (height + 2 * radius) * sizeof(element)));
+	//CHECK(cudaMalloc((void**)&hostExt, (width + 2 * radius) * (height + 2 * radius) * sizeof(element)));
+    hostExt = (element*)malloc((width + 2 * radius) * (height + 2 * radius) * sizeof(element));
     
     wrapImage((element*)src.data, hostExt, width, height, radius);
     // Allocate device memory

@@ -22,13 +22,21 @@ int main(int argc, char** argv)
     Mat fImg;
     image.convertTo(fImg, CV_32FC1);
     
+    clock_t start, stop;
+    double gs_time, gt_time, gp_time;
+    double all_time;
+    
+    start = clock();
     cuGenStroke(fImg, S_rst, 10, 0.1f);
     cuGenToneMap(image, J_rst);
     cuGenPencil(pencil, J_rst, S_rst, gray_result);
+    stop = clock();
+    all_time = (double) (stop - start) / CLOCKS_PER_SEC;
 
     gray_result.convertTo(gray_result, CV_8UC1, 255.0);
     
-    imwrite("result/gray_result.png", gray_result);
+    imwrite("result/gpu_gray_rst.png", gray_result);
 
+    cout << "Elapsed Time of All: " << all_time << " sec" << endl;
     return 0;
 }

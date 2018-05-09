@@ -44,7 +44,7 @@ int main(int argc, char** argv)
     // Combine results
     gray_result.convertTo(gray_result, CV_8UC1, 255);
     cvtColor(gray_result, color_result, COLOR_GRAY2RGBA);
-    imwrite("result/gray_rst.png", gray_result);
+    imwrite("result/cpu_gray_rst.png", gray_result);
     imwrite("result/color_rst.png", color_result);
     
     cout << "Elapsed Time of Generating Stroke: " << gs_time << " sec" << endl;

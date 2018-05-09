@@ -18,10 +18,10 @@ __global__ void genTargetHist(unsigned *tgtHist, unsigned *total)
     int offset = blockDim.x * gridDim.x;
     *total = 0;
 
-    float value = 0;
-	float u_b = 225, u_a = 105;
-	float mu_d = 90;
-	float delta_b = 9, delta_d = 11;
+    double value = 0;
+	double u_b = 225, u_a = 105;
+	double mu_d = 90;
+	double delta_b = 9, delta_d = 11;
     
     while (idx < 256)
     {
@@ -35,7 +35,8 @@ __global__ void genTargetHist(unsigned *tgtHist, unsigned *total)
 			(idx - mu_d) / (2 * delta_d * delta_d))) * 0.01;
         value *= 100000; 
         tgtHist[idx] = value;
-        *total += value;
+       // *total += value;
+        atomicAdd(total, value);
         idx += offset;
     }
 }
@@ -66,4 +67,5 @@ void cuGenToneMap(cv::Mat &input, cv::Mat &toneMap)
     CHECK(cudaMemcpy(hostTgtHist, devTgtHist, sizeof(unsigned) * 256, cudaMemcpyDeviceToHost));
 
     cuHistMatch(input, toneMap, hostTgtHist, total);
+    printf("%d\n", total);
 }

@@ -9,18 +9,18 @@
 
 #define PI 3.1415926535
 
-void genToneMap(const cv::Mat & input, cv::Mat & J_rst)
+void genToneMap(cv::Mat & input, cv::Mat & J_rst)
 {
-	double target_histgram[256];
-	float u_b = 225, u_a = 105;
-	float mu_d = 90;
-	float delta_b = 9, delta_d = 11;
-	float total = 0;
+	int target_histgram[256];
+	double u_b = 225, u_a = 105;
+	double mu_d = 90;
+	double delta_b = 9, delta_d = 11;
+	unsigned total = 0;
 
 	// Generating target histgram
 	for (int i = 0; i < 256; i++)
 	{
-		target_histgram[i] = (
+		target_histgram[i] = 100000 * (
 			// Model of bright layer
 			OMEGA1 * (1 / delta_b) * std::exp(-(255 - i) / delta_b) +
 			// Model of mild tone layer
@@ -31,12 +31,8 @@ void genToneMap(const cv::Mat & input, cv::Mat & J_rst)
 		total += target_histgram[i];
 	}
 
-	for (int i = 0; i < 256; i++)
-	{
-		target_histgram[i] /= total;
-	}
 	// process input from target histogram
-	hist_match(input, J_rst, target_histgram);
+	hist_match(input, J_rst, target_histgram, total);
 
 	// average filter
 	cv::blur(J_rst, J_rst, cv::Size(10, 10));
