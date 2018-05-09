@@ -123,6 +123,74 @@ __global__ void getMagMap(element *resps, element *grad, element *cs, unsigned w
     }
 }
 
+__global__ void cu_medianfilter2DNoWrap(const element* signal, element* result, unsigned width, unsigned height, int k_width, int ts_per_dm)
+{
+	//element *kernel = (element*)malloc(sizeof(element) * k_width * k_width);
+    element kernel[9];
+    int radius = k_width / 2;
+    // use dynamic size shared memory
+    extern __shared__ element cache[];
+    int sh_cols = ts_per_dm + radius * 2;
+    int bk_cols = ts_per_dm;    int bk_rows = ts_per_dm;
+    unsigned sg_cols = width + radius * 2;
+
+	int gl_ix = threadIdx.x + blockDim.x * blockIdx.x;
+	int gl_iy = threadIdx.y + blockDim.y * blockIdx.y;
+    int ll_ix = threadIdx.x + radius;
+    int ll_iy = threadIdx.y + radius;
+
+	// Reads input elements into shared memory
+	cache[ll_iy * sh_cols + ll_ix] = signal[gl_iy * width + gl_ix];
+    // Marginal elements in cache
+	if (threadIdx.x < radius)
+	{
+        int id = gl_iy * width + gl_ix - radius;
+        cache[ll_iy * sh_cols + ll_ix - radius] = gl_ix < radius ? 0 : signal[id];
+        id = gl_iy * width + gl_ix + bk_cols;
+        cache[ll_iy * sh_cols + ll_ix + bk_cols] = gl_ix + bk_cols >= width ? 0 : signal[id];
+	}
+	if (threadIdx.y < radius)
+	{
+        int id = (gl_iy - radius) * width + gl_ix; 
+        cache[(ll_iy - radius) * sh_cols + ll_ix] = gl_iy < radius ? 0 : signal[id];
+        id = (gl_iy + bk_rows) * width + gl_ix;
+        cache[(ll_iy + bk_rows) * sh_cols + ll_ix] = gl_iy + bk_rows >= height ? 0 :signal[id];
+	}
+    if (threadIdx.x < radius && threadIdx.y < radius)
+    {
+        int id = (gl_iy - radius) * width + gl_ix - radius;
+        cache[(ll_iy - radius) * sh_cols + ll_ix - radius] = gl_iy < radius ? 0 : signal[id];
+        id = (gl_iy - radius) * width + gl_ix + bk_cols;
+        cache[(ll_iy - radius) * sh_cols + ll_ix + bk_cols] = gl_iy < radius ? 0 : signal[id];
+        id = (gl_iy + bk_rows) * width + gl_ix + bk_cols;
+        cache[(ll_iy + bk_rows) * sh_cols + ll_ix + bk_cols] = gl_iy + bk_rows >= height ? : signal[id];
+        id = (gl_iy + bk_rows) * width + gl_ix - radius;
+        cache[(ll_iy + bk_rows) * sh_cols + ll_ix - radius] = gl_iy + bk_rows >= height ? 0 : signal[id];
+    }
+	__syncthreads();
+
+    // Get kernel element 
+    for (int i = 0; i < k_width; ++i)
+	    for (int j = 0; j < k_width; ++j)
+	        kernel[i * k_width + j] = cache[(ll_iy - radius + i) * sh_cols + ll_ix - radius + j];
+
+	// Orders elements (only half of them)
+	for (int j = 0; j < k_width * k_width / 2 + 1; ++j)
+	{
+		// Finds position of minimum element
+		int min = j;
+		for (int k = j + 1; k < k_width * k_width; ++k)
+			if (kernel[k] < kernel[min])
+				min = k;
+		// Puts found minimum element in its place
+		const element temp = kernel[j];
+		kernel[j] = kernel[min];
+		kernel[min] = temp;
+	}
+	// Gets result - the middle element
+	result[gl_iy * width + gl_ix] = kernel[k_width * k_width / 2];
+}
+
 __global__ void cu_medianfilter2D(const element* signal, element* result, unsigned width, unsigned height, int k_width, int ts_per_dm)
 {
 	//element *kernel = (element*)malloc(sizeof(element) * k_width * k_width);
@@ -237,19 +305,23 @@ void cuGenStroke(const cv::Mat &src, cv::Mat &dst, int kr, float gamma_s)
     int radius = medKs / 2;
 	/////   Allocate page-locked memory for image extension 
 	//CHECK(cudaMalloc((void**)&hostExt, (width + 2 * radius) * (height + 2 * radius) * sizeof(element)));
-    hostExt = (element*)malloc((width + 2 * radius) * (height + 2 * radius) * sizeof(element));
+    //hostExt = (element*)malloc((width + 2 * radius) * (height + 2 * radius) * sizeof(element));
     
-    wrapImage((element*)src.data, hostExt, width, height, radius);
+    //wrapImage((element*)src.data, hostExt, width, height, radius);
     // Allocate device memory
-	CHECK(cudaMalloc((void**)&devExt, (width + 2 * radius) * (height + 2 * radius) * sizeof(element)));
+	//CHECK(cudaMalloc((void**)&devExt, (width + 2 * radius) * (height + 2 * radius) * sizeof(element)));
+    element *devSrc;
 	CHECK(cudaMalloc((void**)&devMed, width * height * sizeof(element)));
+	CHECK(cudaMalloc((void**)&devSrc, width * height * sizeof(element)));
+    CHECK(cudaMemcpy(devSrc, (element*)src.data, width * height * sizeof(element), cudaMemcpyHostToDevice))
 
 	// Copies extension to device
-	CHECK(cudaMemcpy(devExt, hostExt, (width + 2 * radius) * (height + 2 * radius) * sizeof(element), cudaMemcpyHostToDevice));
+	//CHECK(cudaMemcpy(devExt, hostExt, (width + 2 * radius) * (height + 2 * radius) * sizeof(element), cudaMemcpyHostToDevice));
 
     unsigned med_shared_size = (ts_per_dm + 2 * radius) * (ts_per_dm + 2 * radius) * sizeof(element);
     
-	cu_medianfilter2D<<<med_grid, med_block, med_shared_size>>>(devExt, devMed, width, height, medKs, ts_per_dm);
+	//cu_medianfilter2D<<<med_grid, med_block, med_shared_size>>>(devExt, devMed, width, height, medKs, ts_per_dm);
+	cu_medianfilter2DNoWrap<<<med_grid, med_block, med_shared_size>>>(devSrc, devMed, width, height, medKs, ts_per_dm);
     cudaDeviceSynchronize();
 
     /////// medianfilter END
