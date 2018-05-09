@@ -1,7 +1,7 @@
 #ifndef CU_GENSTROKE_H
 #define CU_GENSTROKE_H
 
-#define MAX_SPACE 1024
+#define MAX_SPACE 4096
 #include <cuda_runtime.h>
 #include <opencv2/core/core.hpp>
 
