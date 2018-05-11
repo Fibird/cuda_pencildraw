@@ -13,7 +13,6 @@
 
 __global__ void genTargetHist(unsigned *tgtHist, unsigned *total)
 {
-    int blockNum = gridDim.x;
     int idx = threadIdx.x + blockDim.x * blockIdx.x;
     int offset = blockDim.x * gridDim.x;
     *total = 0;

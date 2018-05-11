@@ -1,5 +1,6 @@
 #include <iostream>
 #include <ctime>
+#include <cuda_runtime.h>
 #include "cuGenStroke.h"
 #include "cuToneDraw.h"
 #include "cuGenPencil.h"
@@ -7,6 +8,13 @@
 
 using namespace std;
 using namespace cv;
+
+__global__ void warmup(char *w)
+{
+    int idx = threadIdx.x + blockIdx.x * blockDim.x;
+    if (idx == 0)
+        printf("Warming up ...\n");
+}
 
 int main(int argc, char** argv)
 {
@@ -23,9 +31,12 @@ int main(int argc, char** argv)
     image.convertTo(fImg, CV_32FC1);
     
     clock_t start, stop;
-    double gs_time, gt_time, gp_time;
     double all_time;
     
+    // warm up cuda runtime
+    char *warmup;
+    cudaMalloc((void**)&warmup, sizeof(char));
+
     start = clock();
     cuGenStroke(fImg, S_rst, 10, 0.1f);
     cuGenToneMap(image, J_rst);
@@ -38,5 +49,6 @@ int main(int argc, char** argv)
     imwrite("result/gpu_gray_rst.png", gray_result);
 
     cout << "Elapsed Time of All: " << all_time << " sec" << endl;
+
     return 0;
 }
