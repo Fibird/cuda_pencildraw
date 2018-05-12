@@ -29,15 +29,15 @@ int main(int argc, char** argv)
 	genToneMap(image, J_rst);
     // Pencil Texture Generation
     genPencil(pencil, J_rst, S_rst, gray_result);
+    gray_result.convertTo(gray_result, CV_8UC1, 255);
     stop = clock();
     
     all_time = (double) (stop - start) / CLOCKS_PER_SEC;
 
     // Combine results
-    gray_result.convertTo(gray_result, CV_8UC1, 255);
-    cvtColor(gray_result, color_result, COLOR_GRAY2RGBA);
+    //cvtColor(gray_result, color_result, COLOR_GRAY2RGBA);
     imwrite("result/cpu_gray_rst.png", gray_result);
-    imwrite("result/color_rst.png", color_result);
+    //imwrite("result/color_rst.png", color_result);
     
     cout << "Elapsed Time of All: " << all_time << " sec" << endl;
 

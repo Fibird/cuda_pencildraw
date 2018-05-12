@@ -401,6 +401,7 @@ void cuGenStroke(const cv::Mat &src, cv::Mat &dst, int kr, float gamma_s)
     // Convolution operation
 	for (int i = 0; i < dir_num; i++)
         conv2D<<<conv_grid, conv_block, conv_shared_size, conv2DStreams[i]>>>(devCs + width * height * i, devSpn + width * height * i, width, height, ks, ts_per_dm, i);
+
     element *devRst = devGrad;
     //CHECK(cudaMalloc((void**)&devRst, sizeof(element) * width * height)); 
     element *hostStrokeData;
@@ -411,6 +412,7 @@ void cuGenStroke(const cv::Mat &src, cv::Mat &dst, int kr, float gamma_s)
         CHECK(cudaStreamSynchronize(conv2DStreams[i]));
         CHECK(cudaStreamDestroy(conv2DStreams[i]));
     }
+
 
     //// ----------- combine ------------ ////
     dim3 add_block(ts_per_dm, ts_per_dm);

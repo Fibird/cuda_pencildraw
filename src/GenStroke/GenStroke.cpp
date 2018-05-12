@@ -1,4 +1,5 @@
 #include "GenStroke.h"
+#include "cpu_convolution.h"
 
 void genStroke(const cv::Mat & src, cv::Mat & dst, int ks, int width, float gamma_s)
 {
@@ -39,7 +40,7 @@ void genStroke(const cv::Mat & src, cv::Mat & dst, int ks, int width, float gamm
 		// Get new kernel from ker_ref
 		warpAffine(ker_ref, ker_real, rot_mat, ker_ref.size());
 		// Convolution operation
-		filter2D(grad, response[i], CV_32F, ker_real);
+		conv2D(grad, response[i], ker_real);
 	}
 
 	cv::Mat indices = cv::Mat::zeros(img_size, CV_8U);
@@ -86,7 +87,7 @@ void genStroke(const cv::Mat & src, cv::Mat & dst, int ks, int width, float gamm
 		rot_mat = cv::getRotationMatrix2D(cv::Point2f((float)ks, (float)ks),
 			(float)i * 180.0 / (float)dir_num, 1.0);
 		warpAffine(ker_ref, ker_real, rot_mat, ker_ref.size());
-		filter2D(C[i], Spn[i], CV_32F, ker_real);
+		conv2D(C[i], Spn[i], ker_real);
 	}
 
 	// Sum the result

@@ -19,6 +19,7 @@ add_executable(cpu_pencil_draw PencilDraw.cpp)
 
 set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS};-gencode arch=compute_60,code=sm_60)
 cuda_add_executable(gpu_pencil_draw cuPencilDraw.cu)
+cuda_add_executable(gpu_pencil_draw_v2 cuPencilDrawV2.cu)
 
 set(PENCIL_DRAW_LIBRARY_DIRS ${MAIN_PROJECT_ROOT_DIR}/bin/lib)
 
@@ -28,3 +29,4 @@ set(GPU_HISTOGRAM_PATH /home/liuchaoyang/grad_proj/cuda_pracs/histogram_proj)
 set(GPU_HISTOGRAM_LIBS ${GPU_HISTOGRAM_PATH}/bin/lib/gpu_histogram/libgpu_histogram.a)
 target_link_libraries(cpu_pencil_draw ${OpenCV_LIBS} ${PENCIL_DRAW_LIBS} ${CPU_HISTOGRAM_LIBS})
 target_link_libraries(gpu_pencil_draw ${CU_PENCIL_DRAW_LIBS} ${OpenCV_LIBS} ${GPU_HISTOGRAM_LIBS})
+target_link_libraries(gpu_pencil_draw_v2 ${OpenCV_LIBS})
