@@ -43,10 +43,18 @@ int main(int argc, char** argv)
     cuGenPencil(pencil, J_rst, S_rst, gray_result);
     stop = clock();
     all_time = (double) (stop - start) / CLOCKS_PER_SEC;
+    //bool success = imwrite("result/stroke.png", S_rst);
+ //   imwrite("result/tone.png", J_rst);
 
     gray_result.convertTo(gray_result, CV_8UC1, 255.0);
     
-    imwrite("result/gpu_gray_rst.png", gray_result);
+    bool success = imwrite("result/gpu_gray_rst.png", gray_result);
+    cout << "***************************" << endl;
+    cout << "* Pencil Draw V1.2" << endl;
+    cout << "* Created by Liu Chaoyang" << endl;
+    cout << "***************************" << endl;
+    if (success)
+        cout << "======== Pencil Sketch Generatation Succeed ========" << endl;
 
     cout << "Elapsed Time of All: " << all_time << " sec" << endl;
 
