@@ -36,8 +36,14 @@ int main(int argc, char** argv)
 
     // Combine results
     //cvtColor(gray_result, color_result, COLOR_GRAY2RGBA);
-    imwrite("result/cpu_gray_rst.png", gray_result);
+    bool success = imwrite("result/cpu_gray_rst.png", gray_result);
     //imwrite("result/color_rst.png", color_result);
+    cout << "***************************" << endl;
+    cout << "* Pencil Draw(CPU)" << endl;
+    cout << "* Created by Liu Chaoyang" << endl;
+    cout << "***************************" << endl;
+    if (success)
+        cout << "======== Pencil Sketch Generatation Succeed ========" << endl;
     
     cout << "Elapsed Time of All: " << all_time << " sec" << endl;
 
