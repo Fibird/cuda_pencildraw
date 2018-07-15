@@ -44,7 +44,7 @@ __global__ void addLayers(element *arrays, element *result, unsigned width, unsi
     }
 }
 
-__global__ void conv2D(const element *signal, element *result, unsigned width, unsigned height, int ks, int ts_per_dm)
+__global__ void conv2D(const element *signal, element *result, unsigned width, unsigned height, int ks, int ts_per_dm, int order)
 {
     int radius = ks / 2;
     // use dynamic size shared memory
@@ -91,8 +91,7 @@ __global__ void conv2D(const element *signal, element *result, unsigned width, u
     element value = 0;
     for (int i = 0; i < ks; ++i)
 	    for (int j = 0; j < ks; ++j)
-            // TODO:Mask offset
-	    	value  += cache[(ll_iy - radius + i) * sh_cols + ll_ix - radius + j] * Mask[i * ks + j];
+	    	value  += cache[(ll_iy - radius + i) * sh_cols + ll_ix - radius + j] * Mask[order * ks * ks + i * ks + j];
 
 	// Gets result 
     result[gl_iy * width + gl_ix] = value;
@@ -133,7 +132,6 @@ __global__ void cu_medianfilter2DNoWrap(const element* signal, element* result, 
     extern __shared__ element cache[];
     int sh_cols = ts_per_dm + radius * 2;
     int bk_cols = ts_per_dm;    int bk_rows = ts_per_dm;
-    unsigned sg_cols = width + radius * 2;
 
 	int gl_ix = threadIdx.x + blockDim.x * blockIdx.x;
 	int gl_iy = threadIdx.y + blockDim.y * blockIdx.y;
@@ -300,18 +298,10 @@ void cuGenStroke(const cv::Mat &src, cv::Mat &dst, int kr, float gamma_s)
     dim3 med_grid((width + med_block.x - 1) / med_block.x, (height + med_block.y - 1) / med_block.y);
     
     ////--------------- medianfilter blur ----------------////
-    element *hostExt;
-    element *devExt, *devMed;
     int medKs = 3;
     int radius = medKs / 2;
-	/////   Allocate page-locked memory for image extension 
-	//CHECK(cudaMalloc((void**)&hostExt, (width + 2 * radius) * (height + 2 * radius) * sizeof(element)));
-    //hostExt = (element*)malloc((width + 2 * radius) * (height + 2 * radius) * sizeof(element));
     
-    //wrapImage((element*)src.data, hostExt, width, height, radius);
-    // Allocate device memory
-	//CHECK(cudaMalloc((void**)&devExt, (width + 2 * radius) * (height + 2 * radius) * sizeof(element)));
-    element *devSrc;
+    element *devSrc, *devMed;
 	CHECK(cudaMalloc((void**)&devMed, width * height * sizeof(element)));
 	CHECK(cudaMalloc((void**)&devSrc, width * height * sizeof(element)));
 
@@ -320,38 +310,53 @@ void cuGenStroke(const cv::Mat &src, cv::Mat &dst, int kr, float gamma_s)
 
     CHECK(cudaMemcpy(devSrc, (element*)src.data, width * height * sizeof(element), cudaMemcpyHostToDevice));
 
-	// Copies extension to device
-	//CHECK(cudaMemcpy(devExt, hostExt, (width + 2 * radius) * (height + 2 * radius) * sizeof(element), cudaMemcpyHostToDevice));
-
     unsigned med_shared_size = (ts_per_dm + 2 * radius) * (ts_per_dm + 2 * radius) * sizeof(element);
     
-	//cu_medianfilter2D<<<med_grid, med_block, med_shared_size>>>(devExt, devMed, width, height, medKs, ts_per_dm);
 	cu_medianfilter2DNoWrap<<<med_grid, med_block, med_shared_size, medStream>>>(devSrc, devMed, width, height, medKs, ts_per_dm);
-    element *devGrad;
+
     // allocate data for grad 
-	CHECK(cudaMalloc((void**)&devGrad, width * height * sizeof(element)));
+    element *devGrad = devSrc;
+	//CHECK(cudaMalloc((void**)&devGrad, width * height * sizeof(element)));
+    
     CHECK(cudaStreamSynchronize(medStream));
+    CHECK(cudaStreamDestroy(medStream));
 
     /////// medianfilter END
 
     //// ----------- Get gradient -------------- ////
     dim3 grad_block(ts_per_dm, ts_per_dm);
     dim3 grad_grid((width + grad_block.x - 1) / grad_block.x, (height + grad_block.y - 1) / grad_block.y);
+
     cudaStream_t gradStream;
     CHECK(cudaStreamCreate(&gradStream));
+
     getGrad<<<grad_grid, grad_block, 0, gradStream>>>(devMed, devGrad, width, height);
+
 	const int dir_num = 8;
     element *devResps;
     // allocate data for conv2D
     CHECK(cudaMalloc((void**)&devResps, sizeof(element) * width * height * dir_num));
+
     CHECK(cudaStreamSynchronize(gradStream));
+    CHECK(cudaStreamDestroy(gradStream));
+
     /////// gradient END
 
     //// ---------- convolution ----------- ////
     int ks = kr * 2 + 1;
 	cv::Mat ker_ref = cv::Mat::zeros(ks, ks, CV_32FC1);
 	ker_ref(cv::Rect(0, kr, ks, 1)) = cv::Mat::ones(1, ks, CV_32FC1);
-	cv::Mat response[dir_num], ker_real, rot_mat;
+    cv::Mat ker_real = cv::Mat::zeros(ks * 8, ks, CV_32FC1);
+	cv::Mat rot_mat;
+    // generate convolution kernels
+    for (int i = 0; i < dir_num; i++)
+    {
+		rot_mat = getRotationMatrix2D(cv::Point2f((float)kr, (float)kr), (float)i * 180.0 / (float)dir_num, 1.0);
+		// Get new kernel from ker_ref
+		warpAffine(ker_ref, ker_real(cv::Rect(0, i * ks, ks, ks)), rot_mat, ker_ref.size());
+    }
+    CHECK(cudaMemcpyToSymbol(Mask, (element*)ker_real.data, sizeof(element) * ks * ks * dir_num));
+    
     dim3 conv_block(ts_per_dm, ts_per_dm);
     dim3 conv_grid((width + conv_block.x - 1) / conv_block.x, (height + conv_block.y - 1) / conv_block.y);
     int conv_shared_size = (ts_per_dm + ks - 1) * (ts_per_dm + ks - 1) * sizeof(element);
@@ -359,15 +364,9 @@ void cuGenStroke(const cv::Mat &src, cv::Mat &dst, int kr, float gamma_s)
     cudaStream_t conv2DStreams[dir_num];	
 	for (int i = 0; i < dir_num; i++)
 	{
-        // TODO:use cuda stream
-		rot_mat = getRotationMatrix2D(cv::Point2f((float)kr, (float)kr),
-			(float)i * 180.0 / (float)dir_num, 1.0);
         CHECK(cudaStreamCreate(&conv2DStreams[i]));
-		// Get new kernel from ker_ref
-		warpAffine(ker_ref, ker_real, rot_mat, ker_ref.size());
-        CHECK(cudaMemcpyToSymbolAsync(Mask + i * ks * ks, (element*)ker_real.data, sizeof(element) * ks * ks, cudaMemcpyHostToDevice, conv2DStreams[i]));
 		// Convolution operation
-        conv2D<<<conv_grid, conv_block, conv_shared_size, conv2DStreams[i]>>>(devGrad, devResps + width * height * i, width, height, ks, ts_per_dm);
+        conv2D<<<conv_grid, conv_block, conv_shared_size, conv2DStreams[i]>>>(devGrad, devResps + width * height * i, width, height, ks, ts_per_dm, i);
 	}
     
     // allocate memory for C
@@ -378,50 +377,53 @@ void cuGenStroke(const cv::Mat &src, cv::Mat &dst, int kr, float gamma_s)
         CHECK(cudaStreamSynchronize(conv2DStreams[i]));
 
     //// ----------- Get magnitude map -------------- ////
-    cudaStream_t magStream[dir_num];
+    cudaStream_t magStreams[dir_num];
     dim3 mag_block(ts_per_dm, ts_per_dm);
     dim3 mag_grid((width + mag_block.x - 1) / mag_block.x, (height + mag_block.y - 1) / mag_block.y);
     for (int i = 0; i < dir_num; ++i)
     {
-        CHECK(cudaStreamCreate(&magStream[i]));
-        getMagMap<<<mag_grid, mag_block, magStream[i]>>>(devResps, devGrad, devCs, width, height, i, dir_num);
+        CHECK(cudaStreamCreate(&magStreams[i]));
+        getMagMap<<<mag_grid, mag_block, 0, magStreams[i]>>>(devResps, devGrad, devCs, width, height, i, dir_num);
     }
 
     // allocate memory for Spn
-    element *devSpn;
-    CHECK(cudaMalloc((void**)&devSpn, sizeof(element) * width * height * dir_num));
+    element *devSpn = devResps;
+    //CHECK(cudaMalloc((void**)&devSpn, sizeof(element) * width * height * dir_num));
 
     for (int i = 0; i < dir_num; i++)
-        CHECK(cudaStreamSynchronize(magStream[i]));
+    {
+        CHECK(cudaStreamSynchronize(magStreams[i]));
+        CHECK(cudaStreamDestroy(magStreams[i]));
+    }
 
-    // TODO:cuda stream:second conv2D
     //// ------------ convolution --------------- ////
 
+    // Convolution operation
 	for (int i = 0; i < dir_num; i++)
-	{
-        // TODO:use cuda stream
-		rot_mat = getRotationMatrix2D(cv::Point2f((float)kr, (float)kr),
-			(float)i * 180.0 / (float)dir_num, 1.0);
-		// Get new kernel from ker_ref
-		warpAffine(ker_ref, ker_real, rot_mat, ker_ref.size());
-        CHECK(cudaMemcpyToSymbol(Mask, (element*)ker_real.data, sizeof(element) * ks * ks));
-		// Convolution operation
-        conv2D<<<conv_grid, conv_block, conv_shared_size>>>(devCs + width * height * i, devSpn + width * height * i, width, height, ks, ts_per_dm);
-        CHECK(cudaDeviceSynchronize());
-	}
-
-    //// ----------- combine ------------ ////
-    element *devRst;
-    dim3 add_block(ts_per_dm, ts_per_dm);
-    dim3 add_grid((width + add_block.x - 1) / add_block.x, (height + add_block.y - 1) / add_block.y);
-    CHECK(cudaMalloc((void**)&devRst, sizeof(element) * width * height)); 
-    addLayers<<<add_grid, add_block>>>(devSpn, devRst, width, height, dir_num, gamma_s);
-    CHECK(cudaDeviceSynchronize());
-
+        conv2D<<<conv_grid, conv_block, conv_shared_size, conv2DStreams[i]>>>(devCs + width * height * i, devSpn + width * height * i, width, height, ks, ts_per_dm, i);
+    element *devRst = devGrad;
+    //CHECK(cudaMalloc((void**)&devRst, sizeof(element) * width * height)); 
     element *hostStrokeData;
     hostStrokeData = (element*)malloc(sizeof(element) * height * width);
+
+    for (int i = 0; i < dir_num; i++)
+    {
+        CHECK(cudaStreamSynchronize(conv2DStreams[i]));
+        CHECK(cudaStreamDestroy(conv2DStreams[i]));
+    }
+
+    //// ----------- combine ------------ ////
+    dim3 add_block(ts_per_dm, ts_per_dm);
+    dim3 add_grid((width + add_block.x - 1) / add_block.x, (height + add_block.y - 1) / add_block.y);
+    addLayers<<<add_grid, add_block>>>(devSpn, devRst, width, height, dir_num, gamma_s);
+
     CHECK(cudaMemcpy(hostStrokeData, devRst, sizeof(element) * height * width, cudaMemcpyDeviceToHost));
     
     dst = cv::Mat(height, width, imgType, hostStrokeData);
     dst.convertTo(dst, CV_8UC1, 255.0);
+
+    CHECK(cudaFree(devSrc));
+    CHECK(cudaFree(devMed));
+    CHECK(cudaFree(devResps));
+    CHECK(cudaFree(devCs));
 }

@@ -67,5 +67,6 @@ void cuGenToneMap(cv::Mat &input, cv::Mat &toneMap)
     CHECK(cudaMemcpy(hostTgtHist, devTgtHist, sizeof(unsigned) * 256, cudaMemcpyDeviceToHost));
 
     cuHistMatch(input, toneMap, hostTgtHist, total);
-    printf("%d\n", total);
+	// average filter
+	cv::blur(toneMap, toneMap, cv::Size(10, 10));
 }
