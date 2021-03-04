@@ -33,9 +33,15 @@ int main(int argc, char** argv)
     clock_t start, stop;
     double all_time;
     
+    cout << "***************************" << endl;
+    cout << "* Pencil Draw(Stream) V1.2" << endl;
+    cout << "* Created by Liu Chaoyang" << endl;
+    cout << "***************************" << endl;
+    printf("Initializing CUDA runtime environment...\n");
     // warm up cuda runtime
     char *warmup;
     cudaMalloc((void**)&warmup, sizeof(char));
+    printf("Initialization Complete. Start running program.\n");
 
     start = clock();
     cuGenStroke(fImg, S_rst, 10, 0.1f);
@@ -49,10 +55,6 @@ int main(int argc, char** argv)
     gray_result.convertTo(gray_result, CV_8UC1, 255.0);
     
     bool success = imwrite("result/gpu_gray_rst.png", gray_result);
-    cout << "***************************" << endl;
-    cout << "* Pencil Draw V1.2" << endl;
-    cout << "* Created by Liu Chaoyang" << endl;
-    cout << "***************************" << endl;
     if (success)
         cout << "======== Pencil Sketch Generatation Succeed ========" << endl;
 
